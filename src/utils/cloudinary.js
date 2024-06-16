@@ -18,7 +18,8 @@ const uploadOnCloud = async (FilePath) => {
     });
 
     // Log the response from Cloudinary
-    console.log(response);
+    // console.log(response);
+    fs.unlinkSync(FilePath);
 
     // Return the response from Cloudinary
     return response;

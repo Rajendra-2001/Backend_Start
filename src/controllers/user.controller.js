@@ -9,7 +9,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const registerUser = asyncHandler(async (req, res) => {
   // Get user details from the front end
   const { fullname, email, username, password } = req.body;
-  console.log("email: ", email);
+  // console.log("email: ", email);
 
   // Validate the input fields
   if (
@@ -25,7 +25,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const existedUser = await user.findOne({
     $or: [{ username }, { email }],
   });
-
+  console.log(req.files);
   if (existedUser) {
     // If a user already exists, throw a 409 error
     throw new ApiError(409, "User already exists!");
@@ -33,7 +33,16 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // Get file paths for avatar and cover image from the request
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+  let coverImageLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files.coverImage[0].path;
+  }
 
   // Check if avatar file is provided
   if (!avatarLocalPath) {
