@@ -66,25 +66,33 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
-      _id: this._id,
-      email: this.email,
-      username: this.username,
-      fullname: this.fullname,
+      // Payload: includes user-specific information
+      _id: this._id, // User's unique identifier
+      email: this.email, // User's email address
+      username: this.username, // User's username
+      fullname: this.fullname, // User's full name
     },
+    // Secret key to sign the token, stored in an environment variable for security
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+      // Token expiration time, stored in an environment variable
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY, // e.g., '15m' for 15 minutes
     }
   );
 };
+
+// Method to generate a refresh token for a user
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
-      _id: this._id,
+      // Payload: minimal information, only the user ID
+      _id: this._id, // User's unique identifier
     },
+    // Secret key to sign the refresh token, stored in an environment variable for security
     process.env.REFRESH_TOKEN_SECRET,
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+      // Token expiration time, stored in an environment variable
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY, // e.g., '7d' for 7 days
     }
   );
 };
