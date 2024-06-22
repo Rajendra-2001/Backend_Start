@@ -9,12 +9,15 @@ const generateAccessAndRefreshToken = async (userId) => {
   try {
     // Find the user by their unique identifier
     const User = await user.findById(userId);
+    console.log("Found User:", User);
 
     // Generate an access token for the user
     const accessToken = User.generateAccessToken();
+    console.log("Generated Access Token:", accessToken);
 
     // Generate a refresh token for the user
     const refreshToken = User.generateRefreshToken();
+    console.log("Generated Refresh Token:", refreshToken);
 
     // Save the refresh token in the user document
     User.refreshToken = refreshToken;
@@ -22,6 +25,7 @@ const generateAccessAndRefreshToken = async (userId) => {
     // Save the user document with the new refresh token
     // `validateBeforeSave: false` skips validation checks
     await User.save({ validateBeforeSave: false });
+    console.log("Saved User with new Refresh Token:", User);
 
     // Return the generated access and refresh tokens
     return { accessToken, refreshToken };
@@ -37,9 +41,9 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 // Register a new user
 const registerUser = asyncHandler(async (req, res) => {
-  // Get user details from the front end
+  // Get user details from the request body
   const { fullname, email, username, password } = req.body;
-  // console.log("email: ", email);
+  console.log(req.body);
 
   // Validate the input fields
   if (
@@ -55,15 +59,14 @@ const registerUser = asyncHandler(async (req, res) => {
   const existedUser = await user.findOne({
     $or: [{ username }, { email }],
   });
-  console.log(req.files);
+
   if (existedUser) {
     // If a user already exists, throw a 409 error
     throw new ApiError(409, "User already exists!");
   }
 
   // Get file paths for avatar and cover image from the request
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  const avatarLocalPath = req.files?.avatar?.[0]?.path;
 
   let coverImageLocalPath;
   if (
@@ -116,12 +119,13 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User Created"));
 });
 
+//Login new user
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
-
+  console.log("request body data login:", req.body);
   // Check if both username and email are provided
-  if (!username || !email) {
-    throw new ApiError(400, "username or password is required");
+  if (!(username || email)) {
+    throw new ApiError(400, "username or email is required");
   }
 
   // Find a user by either username or email
@@ -141,31 +145,32 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   // Generate access and refresh tokens for the user
-  const { accessToken, refreshToken } = generateAccessAndRefreshToken(User._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    User._id
+  );
 
-  // Find the user by ID and exclude password and refreshToken fields from the response
   const loggedInUser = await user
     .findById(User._id)
     .select("-password -refreshToken");
+  console.log("Logged In User:", loggedInUser);
 
-  // Options for setting cookies
   const options = {
-    httpOnly: true, // Prevents client-side scripts from accessing the cookie
-    secure: true, // Ensures the cookie is sent over HTTPS only
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
   };
 
-  // Send response with cookies and user data
   return res
     .status(200)
-    .cookie("accessToken", accessToken, options) // Set access token as a cookie
-    .cookie("refreshToken", refreshToken, options) // Set refresh token as a cookie (corrected the typo)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponse(
         200,
         {
-          user: loggedInUser, // Send user data without password and refreshToken fields
-          accessToken, // Include access token in response
-          refreshToken, // Include refresh token in response
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
         },
         "User logged in Successfully"
       )

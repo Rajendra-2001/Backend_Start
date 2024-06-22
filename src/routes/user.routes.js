@@ -5,7 +5,7 @@ import {
   registerUser,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
-import { verify } from "jsonwebtoken";
+// import { verify } from "jsonwebtoken";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -22,7 +22,7 @@ router.route("/register").post(
   ]), //adding this uplaod as middleware
   registerUser
 );
-router.route("/login").post(loginUser);
+router.route("/login").post(upload.none(), loginUser);
 
 //secured routes
 

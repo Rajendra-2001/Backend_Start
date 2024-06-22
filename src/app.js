@@ -8,10 +8,21 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "20kb" }));
-app.use(express.urlencoded({ extended: true, limit: "20kb" }));
 app.use(express.static("public"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded bodies
 app.use(cookieParser());
+
+// Logging middleware to debug requests
+
+app.use((req, res, next) => {
+  console.log("Request Method:", req.method);
+  console.log("Request URL:", req.url);
+  console.log("Headers:", req.headers);
+  console.log("Body:", req.body); // Log the body to debug
+  next();
+});
+// app.use(errorHandler);
 
 //routes import
 import userRouter from "./routes/user.routes.js";
