@@ -1,10 +1,12 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
+import express from "express";
 import { ApiError } from "../utils/ApiError.js";
 import { application } from "express";
 import { user } from "../models/user.model.js";
 import { uploadOnCloud } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
+import jwt from "jsonwebtoken";
+// import { use } from "express/lib/application.js";
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     // Find the user by their unique identifier
@@ -205,4 +207,42 @@ const logoutUser = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, {}, "User logged out Successfully")); // Send success response
 });
 
-export { registerUser, loginUser, logoutUser };
+const refreshAccessToeken = asyncHandler(async (req, res) => {
+  const incominRefreshToken = req.cookie.refreshToken || req.body.refreshToken;
+  if (!incominRefreshToken) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+  try {
+    const decodedToken = jwt.verify(
+      incominRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    const User = await user.findById(decodedToken?._id);
+    if (!user) {
+      throw new ApiError(401, "Invalid Refresh Token");
+    }
+    if (incominRefreshToken !== use?.refreshToken) {
+      throw new ApiError(401, "Refresh Token Expired");
+    }
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    const { accessToken, newrefreshToken } =
+      await generateAccessAndRefreshToken(User._id);
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("accessToken", newrefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken: newrefreshToken },
+          "Access toeken refreshed "
+        )
+      );
+  } catch (error) {
+    throw new ApiError("401", error?.message || "Invalid Access Toekn");
+  }
+});
+export { registerUser, loginUser, logoutUser, refreshAccessToeken };
