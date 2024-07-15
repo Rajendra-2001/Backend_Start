@@ -245,4 +245,53 @@ const refreshAccessToeken = asyncHandler(async (req, res) => {
     throw new ApiError("401", error?.message || "Invalid Access Toekn");
   }
 });
-export { registerUser, loginUser, logoutUser, refreshAccessToeken };
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const User = await user.findById(req.User?._idid);
+  const isPasswordCorrect = await User.isPasswordCorrect(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(400, "Wrong password");
+  }
+  User.password = newPassword;
+  await User.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password Changed Successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(200, req.User, "Current user Fetched Successfully");
+});
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullname, email } = req.body;
+  if (!fullname || !email) {
+    throw new ApiError(400, "All fields are required");
+  }
+  const User = user
+    .findByIdAndUpdate(req.User._id, {
+      $set: {
+        fullname,
+        email,
+      },
+    })
+    .select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account details updated!"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToeken,
+  changeCurrentPassword,
+  getCurrentUser,
+};
